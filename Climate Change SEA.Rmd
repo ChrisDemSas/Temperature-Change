@@ -1,0 +1,154 @@
+---
+title: "Comparison of Temperature Increase in Each Continent"
+author: "Christopher Demario Sastropranoto"
+output: pdf_document
+---
+
+```{r}
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+
+```
+
+```{r setup, include=FALSE}
+# Library used for the data analysis.
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(janitor)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+library(dplyr)
+library(tmap)
+library(purr)
+library(cartogram)
+```
+
+```{r active="", eval=FALSE}
+Global warming is becoming an increasing problem for the world. Throughout the Cold War era up until the modern era, temperatures and populations have been increasing and that the world may soon face a crisis if this keeps up. In this investigation, we took data from Kaggle about temperatures since the 1960s. To analyse the data, we created graphs and maps in order to see any associations between populations and temperature increase.
+```
+
+```{r include=FALSE}
+# We need to load the data, the data is stored inside variable 'data.'
+raw_data <- read_csv("/home/jovyan/Personal Projects/Climate.csv")
+data <- data.frame(raw_data)
+
+# All continents are taken and their temperature change extracted.
+africa_data <- clean_names(filter(data, Area == "Africa", Element == "Temperature change"))
+europe_data <- clean_names(filter(data, Area == "Europe", Element == "Temperature change"))
+americas_data <- clean_names(filter(data, Area == "Northern America", Element == "Temperature change"))
+asia_data <- clean_names(filter(data, Area == "Asia", Element == "Temperature change"))
+oceania_data <- clean_names(filter(data, Area == "Oceania", Element == "Temperature change"))
+s_americas_data <- clean_names(filter(data, Area == "South America", Element == "Temperature change"))
+```
+
+```{r active="", eval=FALSE}
+
+```
+
+```{r}
+# World averages for average temperature increase. Temperatures are averaged and then 
+europe_averages <-europe_data[-c(0, 1, 2, 3, 4, 5, 6, 7)]
+europe_averages <- colMeans(europe_averages[-c(13, 14, 15, 16, 17),])
+europe_averages <- cbind(europe_averages, "Europe")
+
+africa_averages <-africa_data[-c(0, 1, 2, 3, 4, 5, 6, 7)]
+africa_averages <- colMeans(africa_averages[-c(13, 14, 15, 16, 17),])
+africa_averages <- cbind(africa_averages, "Africa")
+
+americas_averages <-americas_data[-c(0, 1, 2, 3, 4, 5, 6, 7)]
+americas_averages <- colMeans(americas_averages[-c(13, 14, 15, 16, 17),])
+americas_averages <- cbind(americas_averages, "North America")
+
+asia_averages <-asia_data[-c(0, 1, 2, 3, 4, 5, 6, 7)]
+asia_averages <- colMeans(asia_averages[-c(13, 14, 15, 16, 17),])
+asia_averages <- cbind(asia_averages, "Asia")
+
+oceania_averages <-oceania_data[-c(0, 1, 2, 3, 4, 5, 6, 7)]
+oceania_averages <- colMeans(oceania_averages[-c(13, 14, 15, 16, 17),])
+oceania_averages <- cbind(oceania_averages, "Oceania")
+
+s_americas_averages <-s_americas_data[-c(0, 1, 2, 3, 4, 5, 6, 7)]
+s_americas_averages <- colMeans(s_americas_averages[-c(13, 14, 15, 16, 17),])
+s_americas_averages <- cbind(s_americas_averages, "South America")
+```
+
+Graph 1: Graph showing the change in average temperature throughout 1961-2019 in all continents.
+```{r}
+# The making of the ggplot graph.
+full_data <- data.frame(1961:2019, as.numeric(europe_averages[,1]), as.numeric(africa_averages[,1]), as.numeric(americas_averages[,1]), as.numeric(asia_averages[,1]), as.numeric(oceania_averages[,1]),
+as.numeric(s_americas_averages[,1]))
+
+colnames(full_data) <- c("Year", "Europe", "Africa", "NAmerica", "Asia", "Oceania", "SAmerica")
+
+ggplot() + geom_line(data = full_data, aes(x=Year, y=Europe, group=1, color = "Europe")) + geom_line(data = full_data, aes(x=Year, y=Africa, group=1, color = "Africa")) + geom_line(data = full_data, aes(x=Year, y=NAmerica, group=1, color = "North America")) + geom_line(data = full_data, aes(x=Year, y=Asia, group=1, color = "Asia")) + geom_line(data = full_data, aes(x=Year, y=Oceania, group=1, color = "Oceania")) + geom_line(data = full_data, aes(x=Year, y=SAmerica, group = 1, color = "South America")) + labs(y = "Temperature Change")
+```
+
+```{r active="", eval=FALSE}
+In graph 1, we see that the temperatures are generally increasing throughout the years. In fact, we see that for all countries, the temperature change has been increasing and decreasing, with the overall trend being that temperatures increase. Out of all the continents, we see that Europe has the largest variability and overall temperature increase compared to other continents. For the other continents,the temperature change is more or less very similar in the sense that the overall average temperature change, between 1961 to 2019, is above 1 degrees celsius. Another interesting feature is that of North America, which seems to have a very high variability in temperature change throughout the year. We see that between 1970-1982, the graph seeems to spike down and up for North America. Finally, it seems that the global north continents (Europe and North America) seems to have the highest temperature change compared to the global south continents.
+```
+
+Graph 2: Bar graph showing the percent net change in average temperature for all continents.
+
+
+
+```{r}
+# Find the differences and then calculate the percentage increase for each continents.
+europe_differences <- (as.numeric(europe_averages[59]) - as.numeric(europe_averages[1])) * 100 / abs(as.numeric(europe_averages[1]))
+
+africa_differences <- ((as.numeric(africa_averages[59])) - as.numeric(africa_averages[1])) * 100/ (abs(as.numeric(africa_averages[1])))
+
+americas_differences <- (as.numeric(americas_averages[59]) - as.numeric(americas_averages[1])) * 100 / (abs(as.numeric(americas_averages[1])))
+
+asia_differences <- (as.numeric(asia_averages[59]) - as.numeric(asia_averages[1])) * 100 / (abs(as.numeric(asia_averages[1])))
+
+oceania_differences <- (as.numeric(oceania_averages[59]) - as.numeric(oceania_averages[1])) * 100 / (abs(as.numeric(oceania_averages[1])))
+
+s_americas_differences <- (as.numeric(s_americas_averages[59]) - as.numeric(s_americas_averages[1])) * 100 / (abs(as.numeric(s_americas_averages[1])))
+
+differences_dataframe <- data.frame(Continents = c("Europe", "Africa", "North America", "Asia", "Oceania", "South America"),
+
+Differences = c(europe_differences, africa_differences, americas_differences, asia_differences, oceania_differences, s_americas_differences))
+
+ggplot(data = differences_dataframe, aes(x = Continents, y=Differences)) + geom_col(color = "black", fill = "red") + labs(y = "Percentage Differences")
+```
+
+```{r active="", eval=FALSE}
+The results shown in Graph 2 shows that the greatest percentage increase in average temperature is, in fact, in Asia. It is quite interesting to see that, the percentage increase in temperature of the global north continents are among the lowest. Indeed, this is because these continents had a relatively high temperature change (Graph 1) compared to the global south countries. Judging by Graph 2, it seems that Asia has the largest percentage difference by a very large margin, with a difference of nearly 2000% as compared to Africa.
+
+```
+```{r}
+# World population.
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+ggplot(data = world) +
+    geom_sf(aes(fill = pop_est)) +
+    scale_fill_viridis_c(option = "plasma", trans = "sqrt")
+ggplot(data = world) +
+    geom_sf(aes(fill = gdp_est)) +
+    scale_fill_viridis_c(option = "plasma", trans = "sqrt")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r active="", eval=FALSE}
+Finally, the last chart highlights the populations in the world in each country. Judging by the map, it seems that the highest populations are in China and India, followed by the United States of America, Russia and various countries in South America. Going back to temperature increase, since it seems that the highest percentage increase in average temperature (Graph 2) in Asia could be attributed to China and India. This is quite plausible since it is known that industry increased exponentially in China and India post Cold War. On the other hand, it seems that despite the high population densities in American continent and Europe, the data in Graph 2 highlights that the temperature increase is very low. However, the data in Graph 1 shows that both of these continents have the highest temperature change overall compared to other countries in the first place, most likely because these continents were highly industrialized to begin with. 
+```
+
+```{r}
+
+```
